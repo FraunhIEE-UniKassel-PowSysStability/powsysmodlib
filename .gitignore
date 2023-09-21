@@ -1,0 +1,7 @@
+work_in_progress
+dist
+.pytest_cache
+**/__pycache__/
+py_venv
+.vscode
+settings.json
