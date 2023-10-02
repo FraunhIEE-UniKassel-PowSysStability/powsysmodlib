@@ -32,8 +32,11 @@ def set_active_converters(pfi: powfacpy.PFBaseInterface, is_selfsync):
       pfi.set_attr(r"VSM Control System " + str(conv_num),
           {"outserv":outserv_pf_vsm},parent_folder = network_folder)     
 
-def set_selfsync_parameters(controller,converter,controller_params,converter_params):
-  powfacpy.set_attr_of_obj(controller,controller_params)
+def set_selfsync_parameters(composite_model,converter,controller_params,converter_params, pfdi):
+  pfdi.set_parameters_of_dsl_models_in_composite_model(
+    composite_model,
+    controller_params,
+    single_dict_for_all_dsl_models = True)
   powfacpy.set_attr_of_obj(converter,converter_params)
 
 def set_all_pf_vsm_parameters(frame,converter,pf_vsm_parameters,pf_vsm_static_gen_parameters):
@@ -48,10 +51,10 @@ def set_all_pf_vsm_parameters(frame,converter,pf_vsm_parameters,pf_vsm_static_ge
 def get_pf_vsm_frames(pfbi: powfacpy.PFBaseInterface):
   return pfbi.get_obj(r"Network Model\Network Data\FNN grid\VSM Control System*")
 
-def get_selfsync_controllers(pfbi: powfacpy.PFBaseInterface):
-  ctrl_1 = pfbi.get_single_obj(r"Network Model\Network Data\FNN grid\SelfSync 1\Control")  
-  ctrl_2 = pfbi.get_single_obj(r"Network Model\Network Data\FNN grid\SelfSync 2\Control") 
-  return ctrl_1, ctrl_2
+def get_selfsync_composite_models(pfbi: powfacpy.PFBaseInterface):
+  elmcomp_1 = pfbi.get_single_obj(r"Network Model\Network Data\FNN grid\SelfSync 1")  
+  elmcomp_2 = pfbi.get_single_obj(r"Network Model\Network Data\FNN grid\SelfSync 2") 
+  return elmcomp_1, elmcomp_2
 
 def get_pf_vsm_converters(pfbi: powfacpy.PFBaseInterface):
   return pfbi.get_obj(r"Network Model\Network Data\FNN grid\GF converter*")  
@@ -59,13 +62,17 @@ def get_pf_vsm_converters(pfbi: powfacpy.PFBaseInterface):
 def get_selfsync_converters(pfbi: powfacpy.PFBaseInterface):
   return pfbi.get_obj(r"Network Model\Network Data\FNN grid\PWM Converter*")    
 
-def set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_controllers):
+def set_standard_parameters(pf_vsm_frames,
+                            pf_vsm_converters,
+                            selfsync_converters,
+                            selfsync_composite_models,
+                            pfdi):
   for pf_vsm_frame,converter in zip(pf_vsm_frames,pf_vsm_converters):
     set_all_pf_vsm_parameters(pf_vsm_frame,converter,
         parameters.pf_vsm_parameters,parameters.pf_vsm_static_gen_parameters)
-  for selfsync_converter,selfsync_controller in zip(selfsync_converters,selfsync_controllers):
-      set_selfsync_parameters(selfsync_controller,selfsync_converter,
-      parameters.self_sync_parameters,parameters.self_sync_converter_parameters)
+  for selfsync_converter,selfsync_composite_model in zip(selfsync_converters,selfsync_composite_models):
+      set_selfsync_parameters(selfsync_composite_model,selfsync_converter,
+      parameters.self_sync_parameters,parameters.self_sync_converter_parameters,pfdi)
 
 def plot_harmonic_voltage_source_results(pfpi):
   pfpi.set_active_plot("Magnitude","§ Voltage source")

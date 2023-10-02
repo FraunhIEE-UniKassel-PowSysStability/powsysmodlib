@@ -21,20 +21,19 @@ import powerfactory
 sys.path.insert(0,r'D:\User\seberlein\Code\powfacpy\src')
 import powfacpy 
 from FNN_helpers import *
-# powsysmodlib is required (see github.com/FraunhIEE-UniKassel-PowSysStability/powsysmodlib)
-sys.path.append(r'D:\User\seberlein\Code\powsysmodlib\src')
 import harmonic_voltage_source as harmonic_vs
 
 app = powerfactory.GetApplication()
 pfbi = powfacpy.PFBaseInterface(app)
+pfdi = powfacpy.PFDynSimInterface(app)
 pfbi.app.Show()
-pfbi.app.ActivateProject(r'\seberlein\SelfSyncToPowerFactory\FNN_Guideline_Grid_Forming')
+pfbi.app.ActivateProject(r'\seberlein\SelfSyncToPowerFactory\FNN_Guideline_Grid_Forming_enc')
 
 # Get controler frame and converter objects from PF network database
 pf_vsm_frames = get_pf_vsm_frames(pfbi)
 pf_vsm_converters = get_pf_vsm_converters(pfbi)
 selfsync_converters = get_selfsync_converters(pfbi)
-selfsync_controllers = get_selfsync_controllers(pfbi)
+selfsync_composite_models = get_selfsync_composite_models(pfbi)
 
 # %% Create Study Cases
 try:
@@ -70,7 +69,7 @@ try:
   pfsc.delete_obj("*",parent_folder=pfsc.parent_folder_study_cases,error_if_non_existent=False,include_subfolders=True)
   pfsc.delete_obj("*",parent_folder="Network Model\Operation Scenarios",error_if_non_existent=False)
   pfsc.delete_obj("*",parent_folder="Network Model\Variations",error_if_non_existent=False)
-  set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_controllers)
+  set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_composite_models,pfdi)
   pfsc.apply_permutation()
   pfsc.create_cases()
 finally:  
@@ -81,7 +80,7 @@ try:
   app.Hide()
   for scenario_num,study_case_obj in enumerate(pfsc.study_cases):
     study_case_obj.Activate()
-    set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_controllers)
+    set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_composite_models,pfdi)
 finally:  
   app.Show()
 
@@ -102,7 +101,6 @@ try:
     "Voltage sag": (0.95,1.4),
     "Voltage sag and islanding":(0.95,1.4),
   } 
-  pfdi = powfacpy.PFDynSimInterface(app)
   pfpi = powfacpy.PFPlotInterface(app)
   harmonic_source = harmonic_vs.HarmonicVoltageSource(
     r"Network Model\Network Data\FNN grid\harmonic_source",
@@ -115,7 +113,7 @@ try:
     pfdi.set_attr(cominc,{"iopt_sim":"ins","dtemt":0.0625, "iopt_fastchk": 0})
     comsim = pfsc.app.GetFromStudyCase("Run Simulation.ComSim")
     pfdi.set_attr(comsim,{"tstop":3})
-    set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_controllers)
+    set_standard_parameters(pf_vsm_frames,pf_vsm_converters,selfsync_converters,selfsync_composite_models,pfdi)
 
     pfpi.clear_plot_pages()
     if not pfsc.get_value_of_parameter_for_case("converter_type",scenario_num) == "Comparison":
