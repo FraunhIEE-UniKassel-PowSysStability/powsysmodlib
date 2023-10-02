@@ -7,7 +7,8 @@ This model is based on the 'WECC Large-scale PV Plant 110MVA 50Hz' model templat
 
 The model template is found in the project 'wecc_converted_to_emt.pfd' in the templates library (*Library\Templates\WECC Large Scale PV EMT*).
 
-Developed for the publication
-*Open-Source EMT Model of Grid-Forming Converter with Industrial Grade SelfSync and SelfLim Control*
-(IEEE ISGT 2023).
+Developed for the publication (**please cite**)
+
+*Open-Source EMT Model of Grid-Forming Converter with Industrial Grade SelfSync and SelfLim Control* by Simon Eberlein, Peter Unruh and Tobias Erckrath, IEEE ISGT 2023, Grenoble.
+
 See also *github.com/FraunhIEE-UniKassel-PowSysStability/paper_isgt_2023_selfsync*.
