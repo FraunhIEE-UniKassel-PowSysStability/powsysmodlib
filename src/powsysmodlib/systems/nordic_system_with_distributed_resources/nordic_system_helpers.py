@@ -378,18 +378,23 @@ def set_param_selfsync(
     dg_selfsync_converter.psetp = original_sm.pgini*converter_share*(gform_converter_share)
     dg_selfsync_converter.qsetp = original_sm.qgini*converter_share*(gform_converter_share)
     frame = dg_selfsync_converter.c_pmod
-    controller = pfbi.get_single_obj("Control.ElmDsl",parent_folder=frame)
-    pfbi.set_attr(controller,parameters.self_sync_parameters)
+    selfsync = pfbi.get_single_obj("SelfSync.ElmDsl",parent_folder=frame)
+    selflim = pfbi.get_single_obj("SelfLim.ElmDsl",parent_folder=frame)
+    pfdi = powfacpy.PFDynSimInterface(pfbi.app)
+    pfdi.set_parameters_of_dsl_models_in_composite_model(
+      frame, 
+      parameters.self_sync_parameters,
+      single_dict_for_all_dsl_models = True)
     r_series_pu,x_series_pu = powfacpy.engineering_helpers.get_resistance_and_reactance_from_uk_and_copper_losses(
       dg_selfsync_converter.uk,
       dg_selfsync_converter.Pcu,
       dg_selfsync_converter.Snom,
       dg_selfsync_converter.Unom)
-    controller.Ri = r_series_pu
-    controller.Xi = x_series_pu
-    controller.Sb = dg_selfsync_converter.Snom*1e6
-    controller.actOC = 1
-    controller.kp_strich = 2
+    selflim.Ri = r_series_pu
+    selflim.Xi = x_series_pu
+    selflim.actOC = 1
+    selfsync.Sb = dg_selfsync_converter.Snom*1e6
+    selfsync.kp_strich = 2
   else:
     set_activity_selfsync_conv(
       pfbi,
@@ -454,7 +459,7 @@ def set_activity_selfsync_conv(
   else:
     outserv_selfsync = 1
   dg_selfsync_converter.outserv = outserv_selfsync
-  frame = pfbi.get_single_obj(r"With Selflim",
+  frame = pfbi.get_single_obj(r"SelfSync",
     parent_folder=distributed_gen_grid)
   frame.outserv = outserv_selfsync
   selfsync_dc_source = pfbi.get_single_obj(

@@ -26,7 +26,8 @@ from nordic_system_helpers import *
 app = powerfactory.GetApplication()
 pfbi = powfacpy.PFBaseInterface(app)
 pfbi.app.Show()
-app.ActivateProject(r'\seberlein\SelfSyncToPowerFactory\Nordic_System_Selfsync_Paper_Encry')
+app.ActivateProject(r'\seberlein\SelfSyncToPowerFactory\Nordic_System_Selfsync_Paper_enc')
+# app.ActivateProject(r'\seberlein\SelfSyncToPowerFactory\Nordic_System_Selfsync_Paper')
 pfni = powfacpy.PFNetworkInterface(app)
 pfpi = powfacpy.PFPlotInterface(app)
 pfdi = powfacpy.PFDynSimInterface(app)
@@ -83,8 +84,29 @@ try:
 finally:
   app.Show()
 
-  
-# %% Create simulation events and plots
+# %% Set parameters
+try:
+  app.Hide()
+  for scenario_num,study_case_obj in enumerate(pfsc.study_cases):
+    study_case_obj.Activate()
+    switch_between_distributed_generation_and_original_synchronous_machines(
+      power_system_objs,True)
+    converter_share = pfsc.get_value_of_parameter_for_case(
+      "Conv. share",scenario_num)
+    grid_forming_converter_share = pfsc.get_value_of_parameter_for_case(
+      "Grid-forming share",scenario_num)
+    set_distributed_generator_parameters(
+      pfbi,
+      power_system_objs,
+      converter_share,
+      grid_forming_converter_share,
+      pfsc.get_value_of_parameter_for_case(
+      "Conv. type",scenario_num))
+finally:
+  app.Show() 
+
+
+# %% Create simulation events and plots, simulate
 TIME_SPAN = (-0.02,1)
 FONTSIZE = 23
 
@@ -136,7 +158,6 @@ try:
         parent_folder=dg_grid_for_plotting)
     if pfsc.get_value_of_parameter_for_case("Conv. type",scenario_num) == "SelfSync":
       
-      
       pfpi.set_active_plot("Power","§ Power")
       pfpi.plot(dg_gform_selfsync,"m:Psum:busac",label="P (SelfSync) [MW]")
       pfpi.plot(dg_gform_selfsync,"m:Qsum:busac",label="Q (SelfSync) [MVar]")
@@ -151,8 +172,6 @@ try:
       pfpi.active_graphics_page.DoAutoScaleY()
       pfpi.set_all_fonts_of_active_plot(fontsize=FONTSIZE)
       pfpi.get_title_obj_of_active_plot().showTitle = 0
-      export_path = getcwd() + r"\Figures\nordic_system" + "\\" + "SelfSync Currents"
-      pfpi.export_active_page(path=export_path)
 
       # Comparison with PF VSM
       pfpi.set_active_plot("Power","§ Power")
@@ -163,6 +182,13 @@ try:
       pfpi.set_active_plot("Short-circuit terminal","§ Short Circuit")
       pfpi.plot(r"Netzmodell\Netzdaten\Nordic\4022\4022","m:u1",results_obj=results_obj_vsm,label="u (PF-VSM) [pu]")
 
+      cominc = pfsc.app.GetFromStudyCase("Calculation of initial conditions.ComInc")
+      pfdi.set_attr(cominc,{"iopt_sim":"ins","dtemt":0.0625, 
+        "iopt_fastchk": 0, "tstart": -50})
+      comsim = pfsc.app.GetFromStudyCase(".ComSim")
+      pfdi.set_attr(comsim,{"tstop":1})
+      comsim.Execute()
+      
     elif pfsc.get_value_of_parameter_for_case("Conv. type",scenario_num) == "PowerFactory VSM":  
       dg_gform_vsm = pfbi.get_single_obj("dg_pf_vsm_converter*.ElmGenstat",
         parent_folder=dg_grid_for_plotting)
@@ -183,6 +209,13 @@ try:
       export_path = getcwd() + r"\Figures\nordic_system" + "\\" + "PF-VSM Currents"
       pfpi.get_title_obj_of_active_plot().showTitle = 0
       pfpi.export_active_page(path=export_path)
+      
+      cominc = pfsc.app.GetFromStudyCase("Calculation of initial conditions.ComInc")
+      pfdi.set_attr(cominc,{"iopt_sim":"ins","dtemt":0.0625, 
+        "iopt_fastchk": 0, "tstart": -50})
+      comsim = pfsc.app.GetFromStudyCase(".ComSim")
+      pfdi.set_attr(comsim,{"tstop":1})
+      comsim.Execute()
 
     # Compare SelfSync and PF VSM
     elif pfsc.get_value_of_parameter_for_case("Conv. type",scenario_num) == "Comparison":
@@ -205,42 +238,42 @@ try:
       export_path = getcwd() + r"\Figures\nordic_system" + "\\" + "p and q comparison"
       pfpi.export_active_page(path=export_path)
 
-    cominc = pfsc.app.GetFromStudyCase("Calculation of initial conditions.ComInc")
-    pfdi.set_attr(cominc,{"iopt_sim":"ins","dtemt":0.0625, 
-      "iopt_fastchk": 0, "tstart": -50})
-    comsim = pfsc.app.GetFromStudyCase(".ComSim")
-    pfdi.set_attr(comsim,{"tstop":1})
+    
 finally:
   app.Show()
 
 
-# %% Set parameters
-try:
-  app.Hide()
+# %% Export plots
+try:  
+  # app.Hide()
   for scenario_num,study_case_obj in enumerate(pfsc.study_cases):
-    study_case_obj.Activate()
-    switch_between_distributed_generation_and_original_synchronous_machines(
-      power_system_objs,True)
-    converter_share = pfsc.get_value_of_parameter_for_case(
-      "Conv. share",scenario_num)
-    grid_forming_converter_share = pfsc.get_value_of_parameter_for_case(
-      "Grid-forming share",scenario_num)
-    set_distributed_generator_parameters(
-      pfbi,
-      power_system_objs,
-      converter_share,
-      grid_forming_converter_share,
-      pfsc.get_value_of_parameter_for_case(
-      "Conv. type",scenario_num))
+    if pfsc.get_value_of_parameter_for_case("Conv. type",scenario_num) == "SelfSync":
+      export_path = getcwd() + r"\Figures\nordic_system" + "\\" + "SelfSync Currents"
+      study_case_obj.Activate()
+      pfpi.set_active_plot("ABC currents SelfSync","§ Currents")
+      pfpi.autoscale()
+      pfpi.export_active_page(path=export_path)
+    elif pfsc.get_value_of_parameter_for_case("Conv. type",scenario_num) == "PowerFactory VSM":        
+      export_path = getcwd() + r"\Figures\nordic_system" + "\\" + "PF-VSM Currents"
+      study_case_obj.Activate()
+      pfpi.set_active_plot("ABC currents PF-VSM","§ Currents")
+      pfpi.autoscale()
+      pfpi.export_active_page(path=export_path)
+    elif pfsc.get_value_of_parameter_for_case("Conv. type",scenario_num) == "Comparison":
+      export_path = getcwd() + r"\Figures\nordic_system" + "\\" + "p and q comparison"
+      study_case_obj.Activate()
+      pfpi.set_active_plot("Active power","§ Power")
+      pfpi.autoscale()
+      pfpi.export_active_page(path=export_path)
 finally:
-  app.Show()  
+  app.Show()
 
 
 # %% Validate the settings of distributed generators by comparing load flow results
 
 try:
   app.Hide()
-  pfsc.study_cases[0].Activate()
+  pfsc.get_study_cases({"Conv. type": lambda x: x=="SelfSync"})[0].Activate()
   check_if_with_and_without_dg_gives_same_load_flow_result(
     pfbi,
     power_system_objs,
