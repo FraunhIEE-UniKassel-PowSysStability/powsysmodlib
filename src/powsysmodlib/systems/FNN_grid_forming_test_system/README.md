@@ -9,7 +9,7 @@ PPMs." VDE Verband der Elektrotechnik Elektronik Informationstechnik, 2020.
 
 Developed for the publication (**please cite**)
 
-*Open-Source EMT Model of Grid-Forming Converter with Industrial Grade SelfSync and SelfLim Control* by Simon Eberlein, Peter Unruh and Tobias Erckrath, IEEE ISGT 2023, Grenoble.
+S. Eberlein, P. Unruh and T. Erckrath, "Open-Source EMT Model of Grid-Forming Converter with Industrial Grade SelfSync and SelfLim Control," 2023 IEEE PES Innovative Smart Grid Technologies Europe (ISGT EUROPE), Grenoble, France, 2023, pp. 1-5
 
 See also *github.com/FraunhIEE-UniKassel-PowSysStability/paper_isgt_2023_selfsync*.
 
