@@ -15,19 +15,29 @@ powfacpy is used (github.com/FraunhIEE-UniKassel-PowSysStability/powfacpy).
 %autoreload 2
 import sys
 from os import getcwd, makedirs
-sys.path.append(r'C:\Program Files\DIgSILENT\PowerFactory 2022 SP4\Python\3.10')
+import pathlib
+
+import pandas as pd
+
+sys.path.append(r'C:\Program Files\DIgSILENT\PowerFactory 2023 SP5\Python\3.11')
 import powerfactory
 # powfacpy is required (see github.com/FraunhIEE-UniKassel-PowSysStability/powfacpy), download or install with pip
-sys.path.insert(0,r'D:\User\seberlein\Code\powfacpy\src')
+sys.path.insert(0,r'D:\User\seberlein\FraunhIEE-UniKassel-PowSysStability\powfacpy\src')
 import powfacpy 
+import powfacpy.applications
+import powfacpy.applications.results
+
 from FNN_helpers import *
 import harmonic_voltage_source as harmonic_vs
 
 app = powerfactory.GetApplication()
 pfbi = powfacpy.PFBaseInterface(app)
 pfdi = powfacpy.PFDynSimInterface(app)
+
 pfbi.app.Show()
 pfbi.app.ActivateProject(r'\seberlein\SelfSyncToPowerFactory\FNN_Guideline_Grid_Forming_enc')
+
+pfri = powfacpy.applications.results.Results(app)
 
 # Get controler frame and converter objects from PF network database
 pf_vsm_frames = get_pf_vsm_frames(pfbi)
@@ -110,6 +120,7 @@ try:
     study_case_obj.Activate()
     harmonic_source.reset_symmetric_and_only_fundamental_frequency()   
     cominc = pfsc.app.GetFromStudyCase("Calculation of initial conditions.ComInc")
+    cominc.Execute()
     pfdi.set_attr(cominc,{"iopt_sim":"ins","dtemt":0.0625, "iopt_fastchk": 0})
     comsim = pfsc.app.GetFromStudyCase("Run Simulation.ComSim")
     pfdi.set_attr(comsim,{"tstop":3})
@@ -160,9 +171,9 @@ try:
 
       elif pfsc.get_value_of_parameter_for_case("test_scenario",scenario_num) == "Grid impedance change":
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S1")
-          pfdi.create_event("Switch 1.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
+          pfdi.create_dyn_sim_event ("Switch 1.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S2")
-          pfdi.create_event("Switch 2.EvtSwitch",{"time":3,"p_target":target,"i_switch":0})
+          pfdi.create_dyn_sim_event ("Switch 2.EvtSwitch",{"time":3,"p_target":target,"i_switch":0})
           pfdi.set_attr(comsim,{"tstop":5})
           
       elif pfsc.get_value_of_parameter_for_case("test_scenario",scenario_num) == "Negative sequence component":
@@ -224,11 +235,11 @@ try:
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S5")
           pfbi.set_attr(target,{"on_off":1})
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S1")
-          pfdi.create_event("Switch 1.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
+          pfdi.create_dyn_sim_event ("Switch 1.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S2")
-          pfdi.create_event("Switch 2.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
+          pfdi.create_dyn_sim_event ("Switch 2.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S3")
-          pfdi.create_event("Switch 3.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
+          pfdi.create_dyn_sim_event ("Switch 3.EvtSwitch",{"time":1,"p_target":target,"i_switch":0})
           pfdi.set_attr(comsim,{"tstop":5})
 
           # Set pf_vsm converters as referencemachines because otherwise they switch of in islanded operation
@@ -239,14 +250,14 @@ try:
 
       elif pfsc.get_value_of_parameter_for_case("test_scenario",scenario_num) == "Short-circuit 3ph":
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\T1")
-          pfdi.create_event("Shc at T1.EvtShc",{"time":1,"p_target":target,"i_shc":0,"R_f":10})
-          pfdi.create_event("Clear shc at T1.EvtShc",{"time":1.1,"p_target":target,"i_shc":4})
+          pfdi.create_dyn_sim_event ("Shc at T1.EvtShc",{"time":1,"p_target":target,"i_shc":0,"R_f":10})
+          pfdi.create_dyn_sim_event ("Clear shc at T1.EvtShc",{"time":1.1,"p_target":target,"i_shc":4})
           pfdi.set_attr(comsim,{"tstop":5})
 
       elif pfsc.get_value_of_parameter_for_case("test_scenario",scenario_num) == "Short-circuit 2ph":
           target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\T1")
-          pfdi.create_event("Shc at T1.EvtShc",       {"time":1,"p_target":target,"i_shc":1})
-          pfdi.create_event("Clear shc at T1.EvtShc", {"time":1.1,"p_target":target,"i_shc":4})
+          pfdi.create_dyn_sim_event ("Shc at T1.EvtShc",       {"time":1,"p_target":target,"i_shc":1})
+          pfdi.create_dyn_sim_event ("Clear shc at T1.EvtShc", {"time":1.1,"p_target":target,"i_shc":4})
           pfdi.set_attr(comsim,{"tstop":5})
 
       elif pfsc.get_value_of_parameter_for_case("test_scenario",scenario_num) == "Voltage sag":
@@ -269,11 +280,11 @@ try:
         target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S5")
         pfbi.set_attr(target,{"on_off":1})
         target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S1")
-        pfdi.create_event("Switch 1.EvtSwitch",{"time":1.15,"p_target":target,"i_switch":0,})
+        pfdi.create_dyn_sim_event("Switch 1.EvtSwitch",{"time":1.15,"p_target":target,"i_switch":0,})
         target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S2")
-        pfdi.create_event("Switch 2.EvtSwitch",{"time":1.15,"p_target":target,"i_switch":0,})
+        pfdi.create_dyn_sim_event ("Switch 2.EvtSwitch",{"time":1.15,"p_target":target,"i_switch":0,})
         target = pfdi.get_single_obj(r"Network Model\Network Data\FNN grid\S3")
-        pfdi.create_event("Switch 3.EvtSwitch",{"time":1.15,"p_target":target,"i_switch":0,})
+        pfdi.create_dyn_sim_event ("Switch 3.EvtSwitch",{"time":1.15,"p_target":target,"i_switch":0,})
         pfdi.set_attr(comsim,{"tstop":5})
 
         # Set pf_vsm converters as referencemachines because otherwise they switch of in islanded operation
@@ -299,14 +310,22 @@ finally:
   app.Show()
 
 
-# %% Simulate all converter study cases
+# %% Simulate all converter study cases and save results (using pickle)
+ 
 try:
-  app.Hide()
+  # app.Hide()
   for scenario_num,study_case_obj in enumerate(pfsc.study_cases):
+    converter_type = pfsc.get_value_of_parameter_for_case("converter_type",scenario_num)
+    scenario = pfsc.get_value_of_parameter_for_case("test_scenario",scenario_num)
     if not pfsc.get_value_of_parameter_for_case("converter_type",scenario_num) == "Comparison":
       study_case_obj.Activate()
+      
       comsim = pfsc.app.GetFromStudyCase("Run Simulation.ComSim")
       comsim.Execute()
+      df_res = pfri.export_to_pandas()
+      path = rf".\output\{converter_type}"
+      pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+      df_res.to_pickle(rf"{path}\{scenario}") 
 finally:
   app.Show()   
 
